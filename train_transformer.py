@@ -105,7 +105,7 @@ for epoch in tqdm(range(num_epoch)):
         if step % 20 == 0:
             print("Epoch [{}/{}], Step [{}/{}] Loss: {:.4f}"
                   .format(epoch + 1, num_epoch, step + 1, total_step, loss.item()))
-torch.save(model.state_dict(), '/home/hexin/Desktop/models/' + '{}.ckpt'.format(args.model))
+torch.save(model.state_dict(), '/home/hexin/Desktop/models/' + '{}.ckpt'.format("Transformer"))
 model.eval()
 correct = 0
 total = 0
