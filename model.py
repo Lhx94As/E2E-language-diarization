@@ -55,16 +55,24 @@ class Transformer_E2E_LID(nn.Module):
     def __init__(self, input_dim, feat_dim, d_k, d_v, d_ff, n_heads=4, dropout=0.1,n_lang=3):
         super(Transformer_E2E_LID, self).__init__()
         self.transform = nn.Linear(input_dim, feat_dim)
+        self.layernorm1 = LayerNorm(feat_dim)
+        self.pos_encoding = PositionalEncoding(max_seq_len=140, features_dim=256)
+        self.layernorm2 = LayerNorm(feat_dim)
         self.attention_block1 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
         self.attention_block2 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
         self.attention_block3 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
+        self.attention_block4 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
         self.output_fc = nn.Linear(feat_dim, n_lang)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x, atten_mask):
-        output = self.transform(x)
-        # output, _ = self.attention_block1(output, atten_mask)
-        # output, _ = self.attention_block2(output, atten_mask)
+    def forward(self, x, seq_len, atten_mask):
+        output = self.transform(x) #x [B, T, input_dim] => [B, T feat_dim]
+        output = self.layernorm1(output)
+        output = self.pos_encoding(output,seq_len)
+        output = self.layernorm2(output)
+        output, _ = self.attention_block1(output, atten_mask)
+        output, _ = self.attention_block2(output, atten_mask)
         output, _ = self.attention_block3(output, atten_mask)
+        output, _ = self.attention_block4(output, atten_mask)
         output = self.sigmoid(self.output_fc(output))
         return output
