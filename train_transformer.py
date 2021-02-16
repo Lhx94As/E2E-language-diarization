@@ -24,14 +24,6 @@ def get_output(outputs, seq_len):
     return output_
 
 n_lang = 3
-# model = BLSTM_E2E_LID(n_lang=n_lang,
-#                       dropout=0.25,
-#                       input_dim=437,
-#                       hidden_size=256,
-#                       num_emb_layer=2,
-#                       num_lstm_layer=3,
-#                       emb_dim=256)
-
 model = Transformer_E2E_LID(n_lang=n_lang,
                             dropout=0.1,
                             input_dim=437,
@@ -41,7 +33,6 @@ model = Transformer_E2E_LID(n_lang=n_lang,
                             d_v=256,
                             d_ff=2048)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-# model = nn.DataParallel(model, device_ids=[0, 1, 2, 3])
 model.to(device)
 
 # train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
@@ -52,13 +43,13 @@ train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
             'PartB_Gujarati/PartB_Gujarati//Train/utt2lan.txt'
 train_set = RawFeatures(train_txt)
 
-# valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
 #             'PartB_Telugu/PartB_Telugu/Dev/utt2lan.txt'
-# valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
 #             'PartB_Tamil/PartB_Tamil/Dev/utt2lan.txt'
-valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+valid_txt= '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
             'PartB_Gujarati/PartB_Gujarati/Dev/utt2lan.txt'
-valid_set = RawFeatures(train_txt)
+valid_set = RawFeatures(valid_txt)
 
 batch_size = 128
 num_epoch = 100
