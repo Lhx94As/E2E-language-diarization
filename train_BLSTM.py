@@ -36,13 +36,13 @@ train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
             'PartB_Gujarati/PartB_Gujarati//Train/utt2lan.txt'
 train_set = RawFeatures(train_txt)
 
-# valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
 #             'PartB_Telugu/PartB_Telugu/Dev/utt2lan.txt'
-# valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
 #             'PartB_Tamil/PartB_Tamil/Dev/utt2lan.txt'
-valid_set = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
+valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
             'PartB_Gujarati/PartB_Gujarati/Dev/utt2lan.txt'
-valid_set = RawFeatures(train_txt)
+valid_set = RawFeatures(valid_txt)
 
 batch_size = 8
 train_data = DataLoader(dataset=train_set,
