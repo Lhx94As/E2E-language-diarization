@@ -52,11 +52,14 @@ class BLSTM_E2E_LID(nn.Module):
 
 #
 class Transformer_E2E_LID(nn.Module):
-    def __init__(self, input_dim, feat_dim, d_k, d_v, d_ff, n_heads=4, dropout=0.1,n_lang=3):
+    def __init__(self, input_dim, feat_dim,
+                 d_k, d_v, d_ff, n_heads=4,
+                 dropout=0.1,n_lang=3, max_seq_len=140,
+                 device=torch.device('cuda:0')):
         super(Transformer_E2E_LID, self).__init__()
         self.transform = nn.Linear(input_dim, feat_dim)
         self.layernorm1 = LayerNorm(feat_dim)
-        self.pos_encoding = PositionalEncoding(max_seq_len=140, features_dim=256)
+        self.pos_encoding = PositionalEncoding(max_seq_len=max_seq_len, features_dim=256, device=device)
         self.layernorm2 = LayerNorm(feat_dim)
         self.attention_block1 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
         self.attention_block2 = EncoderBlock(feat_dim, d_k, d_v, d_ff, n_heads, dropout=dropout)
