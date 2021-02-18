@@ -1,4 +1,5 @@
 import os
+import math
 import random
 import argparse
 import torch
@@ -7,9 +8,19 @@ import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from model import *
-from Loss import *
 from data_load import *
 from model_evaluation import *
+
+def setup_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
 
 
 def get_output(outputs, seq_len):
@@ -20,108 +31,131 @@ def get_output(outputs, seq_len):
         if i == 0:
             output_ = output
         else:
-            output_ = torch.cat((output_,output), dim=0)
+            output_ = torch.cat((output_, output), dim=0)
     return output_
 
-n_lang = 3
-model = Transformer_E2E_LID(n_lang=n_lang,
-                            dropout=0.1,
-                            input_dim=437,
-                            feat_dim=256,
-                            n_heads=4,
-                            d_k=256,
-                            d_v=256,
-                            d_ff=2048)
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-model.to(device)
+def main():
+    parser = argparse.ArgumentParser(description='paras for making data')
+    parser.add_argument('--dim', type=int, help='dim of input features',
+                        default=437)
+    parser.add_argument('--model', type=str, help='model name',
+                        default='Transformer')
+    parser.add_argument('--train', type=str, help='training data, in .txt')
+    parser.add_argument('--test', type=str, help='testing data, in .txt')
+    parser.add_argument('--batch', type=int, help='batch size',
+                        default=64)
+    parser.add_argument('--warmup', type=int, help='num of epochs',
+                        default=20)
+    parser.add_argument('--epochs', type=int, help='num of epochs',
+                        default=120)
+    parser.add_argument('--lang', type=int, help='num of language classes',
+                        default=3)
+    parser.add_argument('--lr', type=float, help='initial learning rate',
+                        default=0.0001)
+    parser.add_argument('--device', type=int, help='Device name',
+                        default=0)
+    parser.add_argument('--seed', type=int, help='Device name',
+                        default=0)
+    args = parser.parse_args()
 
-# train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-#             'PartB_Telugu/PartB_Telugu/Train/utt2lan.txt'
-# train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-#             'PartB_Tamil/PartB_Tamil/Train/utt2lan.txt'
-train_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-            'PartB_Gujarati/PartB_Gujarati//Train/utt2lan.txt'
-train_set = RawFeatures(train_txt)
+    setup_seed(args.seed)
+    device = torch.device('cuda:{}'.format(args.device) if torch.cuda.is_available() else 'cpu')
 
-# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-#             'PartB_Telugu/PartB_Telugu/Dev/utt2lan.txt'
-# valid_txt = '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-#             'PartB_Tamil/PartB_Tamil/Dev/utt2lan.txt'
-valid_txt= '/home/hexin/Desktop/hexin/datasets/First_workshop_codeswitching/' \
-            'PartB_Gujarati/PartB_Gujarati/Dev/utt2lan.txt'
-valid_set = RawFeatures(valid_txt)
+    model = Transformer_E2E_LID(n_lang=args.lang,
+                                dropout=0.1,
+                                input_dim=args.dim,
+                                feat_dim=256,
+                                n_heads=4,
+                                d_k=256,
+                                d_v=256,
+                                d_ff=2048,
+                                max_seq_len=140,
+                                device=device)
+    model.to(device)
 
-batch_size = 128
-num_epoch = 100
-train_data = DataLoader(dataset=train_set,
-                        batch_size=batch_size,
-                        pin_memory=True,
-                        num_workers=16,
-                        shuffle=True,
-                        collate_fn=collate_fn_atten)
+    train_txt = args.train
+    train_set = RawFeatures(train_txt)
+    valid_txt = args.test
+    valid_set = RawFeatures(valid_txt)
+    train_data = DataLoader(dataset=train_set,
+                            batch_size=args.batch,
+                            pin_memory=True,
+                            num_workers=16,
+                            shuffle=True,
+                            collate_fn=collate_fn_atten)
 
-valid_data = DataLoader(dataset=valid_set,
-                        batch_size=1,
-                        pin_memory=True,
-                        # num_workers=16,
-                        shuffle=False,
-                        collate_fn=collate_fn_atten)
+    valid_data = DataLoader(dataset=valid_set,
+                            batch_size=1,
+                            pin_memory=True,
+                            shuffle=False,
+                            collate_fn=collate_fn_atten)
 
-loss_func_CRE = nn.CrossEntropyLoss().to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-T_max = num_epoch
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max)
+    loss_func_CRE = nn.CrossEntropyLoss().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-# Train the model
-total_step = len(train_data)
-best_acc = 0
-
-for epoch in tqdm(range(num_epoch)):
-    loss_item = 0
-    model.train()
-    for step, (utt, labels, seq_len) in enumerate(train_data):
-        utt_ = utt.to(device=device, dtype=torch.float)
-        atten_mask = get_atten_mask(seq_len, utt_.size(0))
-        atten_mask = atten_mask.to(device=device)
-        labels = labels.to(device=device,dtype=torch.long)
-        # Forward pass
-        outputs = model(utt_, seq_len,atten_mask)
-        outputs = get_output(outputs, seq_len)
-        loss = loss_func_CRE(outputs, labels)
-        # Backward and optimize
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    warm_up_with_cosine_lr = lambda epoch: epoch / args.warmup \
+        if epoch <= args.warmup \
+        else 0.5 * (math.cos((epoch - args.warmup) / (args.epochs - args.warmup) * math.pi) + 1)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warm_up_with_cosine_lr)
+    # Train the model
+    total_step = len(train_data)
+    best_acc = 0
+    for epoch in tqdm(range(args.epochs)):
+        model.train()
+        for step, (utt, labels, seq_len) in enumerate(train_data):
+            utt_ = utt.to(device=device, dtype=torch.float)
+            atten_mask = get_atten_mask(seq_len, utt_.size(0))
+            atten_mask = atten_mask.to(device=device)
+            labels = labels.to(device=device, dtype=torch.long)
+            # Forward pass
+            outputs = model(utt_, seq_len, atten_mask)
+            outputs = get_output(outputs, seq_len)
+            loss = loss_func_CRE(outputs, labels)
+            # Backward and optimize
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if step % 10 == 0:
+                print("Epoch [{}/{}], Step [{}/{}] Loss: {:.4f}".
+                      format(epoch + 1, args.epochs, step + 1, total_step, loss.item()))
         scheduler.step()
-        if step % 20 == 0:
-            print("Epoch [{}/{}], Step [{}/{}] Loss: {:.4f}"
-                  .format(epoch + 1, num_epoch, step + 1, total_step, loss.item()))
-torch.save(model.state_dict(), '/home/hexin/Desktop/models/' + '{}.ckpt'.format("Transformer"))
-model.eval()
-correct = 0
-total = 0
-predicts = []
-FAR_list = torch.zeros(n_lang)
-FRR_list = torch.zeros(n_lang)
-eer = 0
-for step, (utt, labels, seq_len) in enumerate(valid_data):
-    utt_ = utt.to(device=device, dtype=torch.float)
-    labels = labels.to(device=device, dtype=torch.long)
-    # Forward pass\
-    outputs = model(x=utt_,seq_len=seq_len, atten_mask=None)
-    outputs = get_output(outputs, seq_len)
-    # print(outputs)
-    predicted = torch.argmax(outputs,-1)
-    total += labels.size(-1)
-    correct += (predicted == labels).sum().item()
-    FAR, FRR = compute_far_frr(n_lang, predicted, labels)
-    FAR_list += FAR
-    FRR_list += FRR
-acc = correct/total
-print('Current Acc.: {:.4f} %'.format(100 * acc))
-for i in range(n_lang):
-    eer_ = (FAR_list[i]/total + FRR_list[i]/total)/2
-    eer += eer_
-    print("EER for label {}: {:.4f}%".format(i, eer_*100))
-print('EER: {:.4f} %'.format(100*eer/n_lang))
-# print('Val Loss: {:.4f}'.format(loss_test.item()))
+
+        print('Current LR: {}'.format(get_lr(optimizer)))
+
+        model.eval()
+        correct = 0
+        total = 0
+        FAR_list = torch.zeros(args.lang)
+        FRR_list = torch.zeros(args.lang)
+        eer = 0
+        with torch.no_grad():
+            for step, (utt, labels, seq_len) in enumerate(valid_data):
+                utt_ = utt.to(device=device, dtype=torch.float)
+                labels = labels.to(device=device, dtype=torch.long)
+                # Forward pass\
+                outputs = model(x=utt_, seq_len=seq_len, atten_mask=None)
+                outputs = get_output(outputs, seq_len)
+                # output_all[step] = outputs
+                # print(outputs)
+                predicted = torch.argmax(outputs, -1)
+                total += labels.size(-1)
+                correct += (predicted == labels).sum().item()
+                FAR, FRR = compute_far_frr(args.lang, predicted, labels)
+                FAR_list += FAR
+                FRR_list += FRR
+            acc = correct / total
+        print('Current Acc.: {:.4f} %'.format(100 * acc))
+        for i in range(args.lang):
+            eer_ = (FAR_list[i] / total + FRR_list[i] / total) / 2
+            eer += eer_
+            print("EER for label {}: {:.4f}%".format(i, eer_ * 100))
+        print('EER: {:.4f} %'.format(100 * eer / args.lang))
+        if acc > best_acc:
+            print('New best Acc.: {:.4f}%, EER: {:.4f} %, model saved!'.format(100 * acc, 100 * eer / args.lang))
+            best_acc = acc
+            torch.save(model.state_dict(), '/home/hexin/Desktop/models/' + '{}.ckpt'.format(args.model))
+    print('Final Acc: {:.4f}%'.format(100 * best_acc))
+
+
+if __name__ == "__main__":
+    main()
