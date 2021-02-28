@@ -39,6 +39,24 @@ def collate_fn_atten(batch):
     return data, labels, seq_length
 
 
+def collate_fn_cnn_atten(batch):
+    batch.sort(key=lambda x: len(x[1]), reverse=True)
+    seq, label = zip(*batch)
+    seq_length = [len(x) for x in label]
+    data = rnn_utils.pad_sequence(seq, batch_first=True, padding_value=0)
+    label_cnn = rnn_utils.pad_sequence(label, batch_first=True, padding_value=255)
+    labels = 0
+    label_cnn_ = 0
+    for i in range(len(label)):
+        if i == 0:
+            labels = label[i]
+            label_cnn_ = label_cnn[0]
+        else:
+            labels = torch.cat((labels, label[i]),-1)
+            label_cnn_ = torch.cat((label_cnn_, label_cnn[i]),-1)
+    return data, labels, label_cnn_, seq_length
+
+
 class RawFeatures(data.Dataset):
     def __init__(self, txt_path):
         with open(txt_path, 'r') as f:
