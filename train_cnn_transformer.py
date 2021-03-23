@@ -40,31 +40,20 @@ def get_output(outputs, seq_len):
 def main():
     global best_eer
     parser = argparse.ArgumentParser(description='paras for making data')
-    parser.add_argument('--dim', type=int, help='dim of input features',
-                        default=23)
-    parser.add_argument('--model', type=str, help='model name',
-                        default='Transformer')
     parser.add_argument('--savedir', type=str, help='dir in which the trained model is saved')
     parser.add_argument('--train', type=str, help='training data, in .txt')
     parser.add_argument('--test', type=str, help='testing data, in .txt')
-    parser.add_argument('--batch', type=int, help='batch size',
-                        default=64)
-    parser.add_argument('--epochs', type=int, help='num of epochs',
-                        default=120)
-    parser.add_argument('--lang', type=int, help='num of language classes',
-                        default=3)
-    parser.add_argument('--seed', type=int, help='seed',
-                        default=666)
-    parser.add_argument('--lr', type=float, help='initial learning rate',
-                        default=0.0001)
-    parser.add_argument('--device', type=int, help='Device ID',
-                        default=0)
-    parser.add_argument('--multigpu', type=bool, help='True if use multiple GPUs to train',
-                        default=True)
-    parser.add_argument('--maxlength', type=int, help='Max sequence length for positional enc',
-                        default=200)
-    parser.add_argument('--lambda', type=float, help='hyperparameter for joint training, default 0.5',
-                        default=0.5)
+    parser.add_argument('--seed', type=int, help='seed', default=666)
+    parser.add_argument('--device', type=int, help='Device ID', default=0)
+    parser.add_argument('--batch', type=int, help='batch size', default=64)
+    parser.add_argument('--epochs', type=int, help='num of epochs', default=120)
+    parser.add_argument('--dim', type=int, help='dim of input features', default=23)
+    parser.add_argument('--lang', type=int, help='num of language classes', default=3)
+    parser.add_argument('--model', type=str, help='model name', default='Transformer')
+    parser.add_argument('--lr', type=float, help='initial learning rate', default=0.0001)
+    parser.add_argument('--multigpu', type=bool, help='True if use multiple GPUs to train', default=True)
+    parser.add_argument('--maxlength', type=int, help='Max sequence length for positional enc', default=200)
+    parser.add_argument('--lambda', type=float, help='hyperparameter for joint training, default 0.5', default=0.5)
     args = parser.parse_args()
 
     setup_seed(args.seed)
@@ -132,11 +121,11 @@ def main():
         print('Current LR: {}'.format(get_lr(optimizer)))
 
         model.eval()
+        eer = 0
         correct = 0
         total = 0
         FAR_list = torch.zeros(args.lang)
         FRR_list = torch.zeros(args.lang)
-        eer = 0
         with torch.no_grad():
             for step, (utt, labels, cnn_labels, seq_len) in enumerate(valid_data):
                 utt_ = utt.to(device=device, dtype=torch.float)
