@@ -1,5 +1,5 @@
  # Codes for paper: 
- <End-to-End Language Diarization with Self-Attention for Bilingual Code-switching Speech>  
+ <<End-to-End Language Diarization with Self-Attention for Bilingual Code-switching Speech>>  
  Submitted to Interspeech 2021
   
   Requirement:
