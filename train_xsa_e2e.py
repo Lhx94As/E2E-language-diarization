@@ -11,7 +11,7 @@ from model import *
 from data_load import *
 from model_evaluation import *
 
-#python train_xsa_model.py --savedir "/home/hexin/Desktop/models" --train "/home/hexin/Desktop/data/train.txt" --test "/home/hexin/Desktop/data/test.txt"
+#python train_xsa_e2e.py --savedir "/home/hexin/Desktop/models" --train "/home/hexin/Desktop/data/train.txt" --test "/home/hexin/Desktop/data/test.txt"
 #                          --seed 0 --device 0 --batch 64 --epochs 30 --dim 23 --lang 3 --model my_xsa_model --lr 0.0001 --maxlength 666 --lambda 0.5
 
 def setup_seed(seed):
