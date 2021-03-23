@@ -12,7 +12,7 @@ from data_load import *
 from model_evaluation import *
 
 #python train_sa_e2e.py --savedir "/home/hexin/Desktop/models" --train "/home/hexin/Desktop/data/train.txt" --test "/home/hexin/Desktop/data/test.txt"
-#                          --seed 0 --device 0 --batch 64 --epochs 30 --dim 23 --lang 3 --model my_xsa_model --lr 0.0001 --maxlength 666 --lambda 0.5 -- warmup 10
+#                          --seed 0 --device 0 --batch 64 --warmup 10 --epochs 60 --dim 23 --lang 3 --model my_sa_model --lr 0.0001 --maxlength 666 
 
 def setup_seed(seed):
     torch.manual_seed(seed)
