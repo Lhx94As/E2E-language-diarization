@@ -11,6 +11,9 @@ from model import *
 from data_load import *
 from model_evaluation import *
 
+#python train_sa_e2e.py --savedir "/home/hexin/Desktop/models" --train "/home/hexin/Desktop/data/train.txt" --test "/home/hexin/Desktop/data/test.txt"
+#                          --seed 0 --device 0 --batch 64 --epochs 30 --dim 23 --lang 3 --model my_xsa_model --lr 0.0001 --maxlength 666 --lambda 0.5 -- warmup 10
+
 def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -40,11 +43,11 @@ def main():
     parser.add_argument('--test', type=str, help='testing data, in .txt')
     parser.add_argument('--savedir', type=str, help='dir in which the trained model is saved')
     parser.add_argument('--model', type=str, help='model name', default='my_sa_e2e')
-    parser.add_argument('--seed', type=int, help='Device name', default=0)
+    parser.add_argument('--seed', type=int, help='device id', default=0)
     parser.add_argument('--batch', type=int, help='batch size', default=64)
     parser.add_argument('--device', type=int, help='Device name', default=0)
-    parser.add_argument('--warmup', type=int, help='num of epochs', default=20)
-    parser.add_argument('--epochs', type=int, help='num of epochs', default=120)
+    parser.add_argument('--warmup', type=int, help='num of epochs for warmup', default=10)
+    parser.add_argument('--epochs', type=int, help='num of epochs in total', default=600)
     parser.add_argument('--dim', type=int, help='dim of input features', default=437)
     parser.add_argument('--lang', type=int, help='num of language classes', default=3)
     parser.add_argument('--lr', type=float, help='initial learning rate', default=0.0001)
