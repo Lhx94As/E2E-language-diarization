@@ -50,7 +50,7 @@ class BLSTM_E2E_LID(nn.Module):
         output = torch.sigmoid(self.output_fc(output_))
         return output.view(-1,self.num_classes), embedding
 
-#
+
 class Transformer_E2E_LID(nn.Module):
     def __init__(self, input_dim, feat_dim,
                  d_k, d_v, d_ff, n_heads=4,
@@ -90,24 +90,22 @@ class X_Transformer_E2E_LID(nn.Module):
         self.input_dim = input_dim
         self.feat_dim = feat_dim
         self.device = device
+        # x-vector module
         self.dropout = nn.Dropout(p=dropout)
         self.tdnn1 = nn.Conv1d(in_channels=input_dim, out_channels=512, kernel_size=5, dilation=1)
         self.bn1 = nn.BatchNorm1d(512, momentum=0.1, affine=False)
         self.tdnn2 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=5, dilation=2)
         self.bn2 = nn.BatchNorm1d(512, momentum=0.1, affine=False)
-        # self.tdnn3 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=1, dilation=1)
-        # self.bn3 = nn.BatchNorm1d(512, momentum=0.1, affine=False)
-        self.tdnn3 = nn.Conv1d(in_channels=512, out_channels=1500, kernel_size=1, dilation=1)
-        self.bn3 = nn.BatchNorm1d(1500, momentum=0.1, affine=False)
-
-        # self.tdnn4 = nn.Conv1d(in_channels=512, out_channels=1500, kernel_size=1, dilation=1)
-        # self.bn4 = nn.BatchNorm1d(1500, momentum=0.1, affine=False)
+        self.tdnn3 = nn.Conv1d(in_channels=512, out_channels=512, kernel_size=1, dilation=1)
+        self.bn3 = nn.BatchNorm1d(512, momentum=0.1, affine=False)
+        self.tdnn4 = nn.Conv1d(in_channels=512, out_channels=1500, kernel_size=1, dilation=1)
+        self.bn4 = nn.BatchNorm1d(1500, momentum=0.1, affine=False)
         self.fc5 = nn.Linear(3000, feat_dim)
         self.bn5 = nn.BatchNorm1d(feat_dim, momentum=0.1, affine=False)
         self.fc6 = nn.Linear(feat_dim, feat_dim)
         self.bn6 = nn.BatchNorm1d(feat_dim, momentum=0.1, affine=False)  # momentum=0.5 in asv-subtools
         self.fc7 = nn.Linear(feat_dim, n_lang)
-
+        # attention module
         self.layernorm1 = LayerNorm(feat_dim)
         self.pos_encoding = PositionalEncoding(max_seq_len=max_seq_len, features_dim=256, device=device)
         self.layernorm2 = LayerNorm(feat_dim)
@@ -121,13 +119,14 @@ class X_Transformer_E2E_LID(nn.Module):
     def forward(self, x, seq_len, atten_mask, eps=1e-5):
         batch_size = x.size(0)
         T_len = x.size(1)
-        x = self.bn1(F.relu(self.tdnn1(x.view(batch_size*T_len, self.input_dim, -1))))
+        x = x.view(batch_size*T_len, self.input_dim, -1)
+        x = self.bn1(F.relu(self.tdnn1(x)))
         x = self.dropout(x)
         x = self.bn2(F.relu(self.tdnn2(x)))
         x = self.dropout(x)
         x = self.bn3(F.relu(self.tdnn3(x)))
-        # x = self.dropout(x)
-        # x = self.bn4(F.relu(self.tdnn4(x)))
+        x = self.dropout(x)
+        x = self.bn4(F.relu(self.tdnn4(x)))
 
         if self.training:
             shape = x.size()
@@ -136,7 +135,6 @@ class X_Transformer_E2E_LID(nn.Module):
             x += noise * eps
 
         stats = torch.cat((x.mean(dim=2), x.std(dim=2)), dim=1)
-        # print("pooling", stats.size())
         embedding = self.fc5(stats)
         x = self.bn5(F.relu(embedding))
         x = self.dropout(x)
