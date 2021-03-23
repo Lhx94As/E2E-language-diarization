@@ -3,11 +3,10 @@
  Submitted to Interspeech 2021
   
   Requirement:
-  
-  librosa  
-  pydub  
+    
   torch  
   tqdm  
   numpy  
+  scipy
   
   Although the paper has been sunmitted, this repo is working in progress...
