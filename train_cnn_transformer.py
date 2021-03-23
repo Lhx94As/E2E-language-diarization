@@ -8,7 +8,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from model import *
-from Loss import *
 from data_load import *
 from model_evaluation import *
 
@@ -17,7 +16,7 @@ def setup_seed(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
-    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.deterministic = False
     torch.backends.cudnn.benchmark = False
 
 
@@ -39,17 +38,17 @@ def get_output(outputs, seq_len):
 
 
 def main():
+    global best_eer
     parser = argparse.ArgumentParser(description='paras for making data')
     parser.add_argument('--dim', type=int, help='dim of input features',
                         default=23)
     parser.add_argument('--model', type=str, help='model name',
                         default='Transformer')
+    parser.add_argument('--savedir', type=str, help='dir in which the trained model is saved')
     parser.add_argument('--train', type=str, help='training data, in .txt')
     parser.add_argument('--test', type=str, help='testing data, in .txt')
     parser.add_argument('--batch', type=int, help='batch size',
                         default=64)
-    parser.add_argument('--warmup', type=int, help='num of warm up epochs',
-                        default=20)
     parser.add_argument('--epochs', type=int, help='num of epochs',
                         default=120)
     parser.add_argument('--lang', type=int, help='num of language classes',
@@ -62,11 +61,16 @@ def main():
                         default=0)
     parser.add_argument('--multigpu', type=bool, help='True if use multiple GPUs to train',
                         default=True)
+    parser.add_argument('--maxlength', type=int, help='Max sequence length for positional enc',
+                        default=200)
+    parser.add_argument('--lambda', type=float, help='hyperparameter for joint training, default 0.5',
+                        default=0.5)
     args = parser.parse_args()
 
     setup_seed(args.seed)
     device = torch.device('cuda:{}'.format(args.device) if torch.cuda.is_available() else 'cpu')
-
+    print('Current device: {}'.format(device))
+    #load model
     model = X_Transformer_E2E_LID(n_lang=args.lang,
                                 dropout=0.1,
                                 input_dim=args.dim,
@@ -75,13 +79,12 @@ def main():
                                 d_k=256,
                                 d_v=256,
                                 d_ff=2048,
-                                max_seq_len=140,
+                                max_seq_len=args.maxlength,
                                 device=device)
-    # multi_train = args.multigpu
-    # if multi_train:
-    #     model = nn.DataParallel(model, device_ids=[0,1,2,3])
     model.to(device)
-
+    loss_func_CRE = nn.CrossEntropyLoss().to(device)
+    loss_func_xv = nn.CrossEntropyLoss(ignore_index=255).to(device)
+    # load data
     train_txt = args.train
     train_set = RawFeatures(train_txt)
     valid_txt = args.test
@@ -92,27 +95,17 @@ def main():
                             num_workers=16,
                             shuffle=True,
                             collate_fn=collate_fn_cnn_atten)
-
     valid_data = DataLoader(dataset=valid_set,
                             batch_size=1,
                             pin_memory=True,
                             shuffle=False,
-                            collate_fn=collate_fn_cnn_atten)
-
-    loss_func_CRE = nn.CrossEntropyLoss().to(device)
-    loss_func_xv = nn.CrossEntropyLoss(ignore_index=255).to(device)
+                            collate_fn=collate_fn_cnn_atten) 
+    # optimizer & learning rate decay strategy
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
-    T_max = args.epochs
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=T_max)
-
-    # warm_up_with_cosine_lr = lambda epoch: epoch / args.warmup \
-    #     if epoch <= args.warmup \
-    #     else 0.5 * (math.cos((epoch - args.warmup) / (args.epochs - args.warmup) * math.pi) + 1)
-    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=warm_up_with_cosine_lr)
-    # Train the model
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     total_step = len(train_data)
     best_acc = 0
+    # Train model
     for epoch in tqdm(range(args.epochs)):
         model.train()
         for step, (utt, labels, cnn_labels, seq_len) in enumerate(train_data):
@@ -126,7 +119,7 @@ def main():
             outputs = get_output(outputs, seq_len)
             loss_trans = loss_func_CRE(outputs, labels)
             loss_xv = loss_func_xv(cnn_outputs,cnn_labels)
-            loss = 0.6*loss_trans + 0.4*loss_xv
+            loss = args.lambda*loss_trans + (1-args.lambda)*loss_xv
             # Backward and optimize
             optimizer.zero_grad()
             loss.backward()
@@ -136,8 +129,7 @@ def main():
                       format(epoch + 1, args.epochs, step + 1, total_step,
                              loss.item(), loss_trans.item(), loss_xv.item()))
         scheduler.step()
-
-        # print('Current LR: {}'.format(get_lr(optimizer)))
+        print('Current LR: {}'.format(get_lr(optimizer)))
 
         model.eval()
         correct = 0
@@ -149,7 +141,6 @@ def main():
             for step, (utt, labels, cnn_labels, seq_len) in enumerate(valid_data):
                 utt_ = utt.to(device=device, dtype=torch.float)
                 labels = labels.to(device=device, dtype=torch.long)
-                # Forward pass
                 outputs, cnn_outputs = model(x=utt_, seq_len=seq_len, atten_mask=None)
                 outputs = get_output(outputs, seq_len)
                 predicted = torch.argmax(outputs, -1)
@@ -169,8 +160,11 @@ def main():
             print('New best Acc.: {:.4f}%, EER: {:.4f} %, model saved!'.format(100 * acc, 100 * eer / args.lang))
             best_acc = acc
             best_eer = eer / args.lang
-            torch.save(model.state_dict(), '/home/hexin/Desktop/models/' + '{}.ckpt'.format(args.model))
+            torch.save(model.state_dict(), args.savedir + '{}.ckpt'.format(args.model))
     print('Final Acc: {:.4f}%, EER: {:.4f}%'.format(100 * best_acc, 100 * best_eer))
+    model_name = args.savedir + '{}.ckpt'.format(args.model)
+    final_name = args.savedir + '{}_{:.4f}_{:.4f}.ckpt'.format(args.model, best_acc * 100, best_eer * 100)
+    os.rename(model_name, final_name)
 
 
 if __name__ == "__main__":
