@@ -3,10 +3,10 @@
   
   Requirement:
   
-  librosa
-  pydub
-  torch
-  tqdm
-  numpy
+  librosa  
+  pydub  
+  torch  
+  tqdm  
+  numpy  
   
   Although the paper has been sunmitted, this repo is working in progress...
