@@ -119,7 +119,7 @@ class X_Transformer_E2E_LID(nn.Module):
     def forward(self, x, seq_len, atten_mask, eps=1e-5):
         batch_size = x.size(0)
         T_len = x.size(1)
-        x = x.view(batch_size*T_len, self.input_dim, -1)
+        x = x.view(batch_size*T_len, self.input_dim, -1) # [B,T,input_dim,K]=>[B*T,input_dim,K]
         x = self.bn1(F.relu(self.tdnn1(x)))
         x = self.dropout(x)
         x = self.bn2(F.relu(self.tdnn2(x)))
@@ -142,8 +142,7 @@ class X_Transformer_E2E_LID(nn.Module):
         x = self.dropout(x)
         cnn_output = self.fc7(x)
 
-        #x [B, T, input_dim] => [B, T feat_dim]
-        embedding = embedding.view(batch_size, T_len, self.feat_dim)
+        embedding = embedding.view(batch_size, T_len, self.feat_dim) # embedding:[B*T,feat_dim]=>[B, T, feat_dim]
         output = self.layernorm1(embedding)
         output = self.pos_encoding(output,seq_len)
         output = self.layernorm2(output)
