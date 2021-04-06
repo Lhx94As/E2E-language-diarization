@@ -73,7 +73,7 @@ def main():
                                 device=device)
     model.to(device)
     loss_func_CRE = nn.CrossEntropyLoss().to(device)
-    loss_func_xv = nn.CrossEntropyLoss(ignore_index=255).to(device)
+    loss_func_xv = nn.CrossEntropyLoss(ignore_index=255).to(device) # this is important since 255 is for zero paddings
     # load data
     train_txt = args.train
     train_set = RawFeatures(train_txt)
