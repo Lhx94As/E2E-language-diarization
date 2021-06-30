@@ -50,7 +50,7 @@ class BLSTM_E2E_LID(nn.Module):
         output = torch.sigmoid(self.output_fc(output_))
         return output.view(-1,self.num_classes), embedding
 
-
+# SA-E2E
 class Transformer_E2E_LID(nn.Module):
     def __init__(self, input_dim, feat_dim,
                  d_k, d_v, d_ff, n_heads=4,
@@ -81,6 +81,7 @@ class Transformer_E2E_LID(nn.Module):
         return output
 
 
+# XSA-E2E
 class X_Transformer_E2E_LID(nn.Module):
     def __init__(self, input_dim, feat_dim,
                  d_k, d_v, d_ff, n_heads=4,
