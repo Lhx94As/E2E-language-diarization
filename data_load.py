@@ -73,7 +73,7 @@ def get_atten_mask(seq_lens, batch_size):
     atten_mask = torch.ones([batch_size, max_len, max_len])
     for i in range(batch_size):
         length = seq_lens[i]
-        atten_mask[:length,:length] = 0
+        atten_mask[i, :length,:length] = 0
     return atten_mask.bool()
 
 
