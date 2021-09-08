@@ -1,6 +1,6 @@
  # Codes for paper:   
- # End-to-End Language Diarization for Bilingual Code-switching Speech  
- Accepted to Interspeech 2021, will be held in the end of Aug.
+ [[Interspeech 2021] End-to-End Language Diarization for Bilingual Code-switching Speech](https://www.isca-speech.org/archive/pdfs/interspeech_2021/liu21d_interspeech.pdf)     
+
   
   Requirement:
     
