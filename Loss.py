@@ -18,11 +18,6 @@ class DeepClusteringLoss(nn.Module):
         vt_v = torch.norm(torch.matmul(torch.transpose(output, 0, 1), output), p=2) ** 2
         vt_y = torch.norm(torch.matmul(torch.transpose(output, 0, 1), target), p=2) ** 2
         yt_y = torch.norm(torch.matmul(torch.transpose(target, 0, 1), target), p=2) ** 2
-        #
-        # num_frames = output.size()[1]*output.size()[0]
-        # vt_v = torch.norm(torch.matmul(torch.transpose(output, 1, 2), output), p=2) ** 2
-        # vt_y = torch.norm(torch.matmul(torch.transpose(output, 1, 2), target), p=2) ** 2
-        # yt_y = torch.norm(torch.matmul(torch.transpose(target, 1, 2), target), p=2) ** 2
         DC_loss = vt_v - 2 * vt_y + yt_y
         return DC_loss/(num_frames**2)
 
