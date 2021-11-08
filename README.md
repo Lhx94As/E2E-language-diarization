@@ -2,7 +2,7 @@
  [[Interspeech 2021] End-to-End Language Diarization for Bilingual Code-switching Speech](https://www.isca-speech.org/archive/pdfs/interspeech_2021/liu21d_interspeech.pdf)     
 
 # Pls cite as follow if you referred to this work:  
-@inproceedings{liu21d_interspeech,  
+> @inproceedings{liu21d_interspeech,  
   author={Hexin Liu and Leibny Paola García Perera and Xinyi Zhang and Justin Dauwels and Andy W.H. Khong and Sanjeev Khudanpur and Suzy J. Styles},  
   title={{End-to-End Language Diarization for Bilingual Code-Switching Speech}},  
   year=2021,  
@@ -11,9 +11,9 @@
   doi={10.21437/Interspeech.2021-82}  
 }  
   
-  Requirement:
+# Requirement:
     
-  argparse  
+ > argparse  
   torch  
   tqdm  
   numpy  
