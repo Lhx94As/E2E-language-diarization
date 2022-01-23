@@ -1,7 +1,7 @@
  # Codes for paper:   
  [[Interspeech 2021] End-to-End Language Diarization for Bilingual Code-switching Speech](https://www.isca-speech.org/archive/pdfs/interspeech_2021/liu21d_interspeech.pdf)     
 
-I am trying to include the data preprocessing steps in this repo so that you can reproduce the results faster. But maybe after I complete my work for interspeech 2022. Hope our wokr help your research. -- Updated 2022 Jan
+I am trying to include the data preprocessing steps in this repo so that you can reproduce the results faster. But maybe after I complete my work for interspeech 2022. Hope our work help your research. -- Updated 2022 Jan
 
 # Pls cite as follow if you referred to this work:  
 > @inproceedings{liu21d_interspeech,  
