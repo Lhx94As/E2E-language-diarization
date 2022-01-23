@@ -21,5 +21,6 @@ I am trying to include the data preprocessing steps in this repo so that you can
   numpy  
   scipy
   
-  * There is no script for making data, pls do it yourself and revise the code in "data_load.py" accordingly.
-  * Note that the torch.cuda.deterministics=True conflicts with conv1d with dilation and this makes the code very slow, so we set it to False in train_xsa.py. Hence we don't fix the random seed in the training stage. But if you would like to do that, that's also fine, just set it to True.  
+  * There is no script for making data (I am trying to include them soon), pls do it yourself for now and revise the code in "data_load.py" accordingly.
+  * Note that the torch.cuda.deterministics=True conflicts with dilated conv1d which makes the code very slow, so we set it to False in train_xsa.py. Hence we don't fix the random seed in the training stage. But if you would like to do that, that's also fine, just set it to True. 
+  * Now particular initialization is needed. Just run it. And if your have better hyperparams, pls email me so that I can use them hahaha:) 
